@@ -1,0 +1,100 @@
+Призначення
+Визначає об'єкт, що інкапсулює спосіб взаємодії множини об'єктів. Посередник забезпечує слабку зв'язаність системи, звільняючи об'єкти від необхідності явно посилатися один на одного, і дозволяючи тим самим незалежно змінювати взаємодії між ними.
+
+Застосовність
+Слід використовувати шаблон Посередник у випадках, коли:
+
+існують об'єкти, зв'язки між котрими досить складні та чітко задані. Отримані при цьому залежності не структуровані та важкі для розуміння;
+не можна повторно використовувати об'єкт, оскільки він обмінюється інформацією з багатьма іншими об'єктами;
+поведінка, розподілена між кількома класами, повинна піддаватися налагодженню без створювання множини підкласів.
+
+Переваги та недоліки
+Переваги
+Медіатор вказує логіку посередництва між колегами. З цієї причини це легше зрозуміти цю логіку, оскільки вона зберігається лише в одному класі.
+Класи колег повністю відокремлені. Додавання нового класу колеги дуже легко через цей рівень роз'єднання.
+Об'єкти колеги повинні спілкуватися лише з об'єктами посередника. Практично модель медіатора зменшує необхідні канали зв'язку (протоколи) від багатьох до багатьох до одного до багатьох і багатьох до одного.
+Оскільки вся логіка зв'язку вказується класом посередника, коли ця логіка потребує розширення, лише клас посередника потрібно розширити.
+Недоліки
+Складність — на практиці посередники стають все більш складними та складними
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+class Colleague;
+class Mediator;
+class ConcreteMediator;
+class ConcreteColleague1;
+class ConcreteColleague2;
+struct Mediator
+{
+	virtual void Send(string const& message, Colleague *colleague) const = 0;
+};
+class Colleague
+{
+protected:
+	Mediator* mediator;
+public:
+	explicit Colleague(Mediator *mediator) :mediator(mediator) {}
+};
+struct ConcreteColleague1 :public Colleague
+{
+	explicit ConcreteColleague1(Mediator* mediator) :Colleague(mediator) {}
+	void Send(string const& message)
+	{
+		mediator->Send(message, this);
+	}
+	void Notify(string const& message)
+	{
+		cout << "Colleague1 gets message '" << message << "'" << endl;
+	}
+};
+struct ConcreteColleague2 :public Colleague
+{
+	explicit ConcreteColleague2(Mediator *mediator) :Colleague(mediator) {}
+	void Send(string const& message)
+	{
+		mediator->Send(message, this);
+	}
+	void Notify(string const& message)
+	{
+		cout << "Colleague2 gets message '" << message << "'" << endl;
+	}
+};
+class ConcreteMediator :public Mediator
+{
+protected:
+	ConcreteColleague1 * m_Colleague1;
+	ConcreteColleague2 * m_Colleague2;
+public:
+	void SetColleague1(ConcreteColleague1 *c)
+	{
+		m_Colleague1 = c;
+	}
+	void SetColleague2(ConcreteColleague2 *c)
+	{
+		m_Colleague2 = c;
+	}
+	virtual void Send(string const& message, Colleague *colleague) const
+	{
+		if (colleague == m_Colleague1)
+		{
+			m_Colleague2->Notify(message);
+		}
+		else if (colleague == m_Colleague2)
+		{
+			m_Colleague1->Notify(message);
+		}
+	}
+};
+void main()
+{
+	ConcreteMediator m;
+	ConcreteColleague1 c1(&m);
+	ConcreteColleague2 c2(&m);
+	m.SetColleague1(&c1);
+	m.SetColleague2(&c2);
+	c1.Send("How are you?");
+	c2.Send("Fine, thanks");
+}
